@@ -6,37 +6,13 @@ var objectAssign = require('object-assign');
 
 var opts = Object.assign({}, {
   POLL_INTERVAL: 60000 * 10,
-  TORRENT_DIR: process.cwd()
+  TORRENT_DIR: process.cwd(),
+  FILTERS: 'path/to/filter/file.js'
 }, process.env);
 
 if (!opts.FEED_URL) throw new Error('No FEED_URL env var provided!');
 
-var SHOW_MATCHERS = [
-
-  function HDTVMatcher (item) {
-    if (
-      (
-        /^Arrow/.exec(item.title)
-        || /^The Flash/i.exec(item.title)
-        || /^Star Wars Rebels/i.exec(item.title)
-        || /^Supergirl/i.exec(item.title)
-        || /^Ash vs Evil Dead/i.exec(item.title)
-        || /^Marvel's Agents of S/i.exec(item.title)
-        || /^Doctor Who \(2005\)/i.exec(item.title)
-        || /^Supernatural/i.exec(item.title)
-      )
-      && if720pHDTV(item.title)
-    ) {
-      debug('matched %s', item.title);
-      dlTorrent(item.link);
-    }
-  }
-
-];
-
-function if720pHDTV (x) {
-  return /720p\.HDTV/gi.exec(x);
-}
+var matcher = require(opts.FILTERS);
 
 function dlTorrent (url) {
   var fs = require('fs');
@@ -58,9 +34,10 @@ function dlTorrent (url) {
     var meta = this.meta;
     var item;
     while (item = stream.read()) {
-      SHOW_MATCHERS.forEach(function (matcher) {
-        matcher(item);
-      });
+      if (matcher(item)) {
+        debug('matched %s', item.title);
+        dlTorrent(item.link);
+      }
     }
   });
   debug('retrieving feed');
