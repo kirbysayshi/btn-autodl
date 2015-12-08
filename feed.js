@@ -29,6 +29,9 @@ function dlTorrent (url) {
 
 (function check() {
   var fp = new FeedParser();
+  fp.on('error', function (e) {
+    process.stderr.write(JSON.stringify(e));
+  });
   fp.on('readable', function () {
     var stream = this;
     var meta = this.meta;
